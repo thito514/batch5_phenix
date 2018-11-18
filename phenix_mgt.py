@@ -272,7 +272,7 @@ def merge_loop_tables(dict_merge):
                              col_name=merge_step['col_name'],
                              how=merge_step['how'], 
                              del_col=merge_step['del_col'])
-        print('----> STEP ---->')
+        print('----> MERGE STEP ---->')
         print(list(df.columns))
         print(len(df))
     return df
@@ -281,6 +281,14 @@ def merge_loop_tables(dict_merge):
 ### List of functions used for cleaning Comptes table and 
 ### geo positionning data (Longitidue and Latitude)
 ##############################################################
+def geocode(query, IGN_API=''):
+    from geopy.geocoders import IGNFrance
+    geolocator = IGNFrance(api_key=IGN_API, referer='localhost', user_agent='Agent_tests')
+    
+    location = geolocator.geocode(query,maximum_responses=1,exactly_one=True)
+    
+    return (location.longitude, location.latitude)
+
 def geotag_Compte(df, prefix='', IGN_API=''):
     """
     This function corrects Phenix original geo coordinates (longitude and latitude).
@@ -299,7 +307,7 @@ def geotag_Compte(df, prefix='', IGN_API=''):
             new_lon, new_lat = Account recalculated geo coordinate from IGN
             delta            = Distance (km) between old and new geo coordinates
     """
-    from geopy.geocoders import Nominatim, IGNFrance
+    from geopy.geocoders import IGNFrance
     from geopy.distance import lonlat, distance
 
     geolocator = IGNFrance(api_key=IGN_API, referer='localhost', user_agent='Agent_tests')
@@ -362,6 +370,41 @@ def calc_geodistance(lonlat1=(), lonlat2=()):
     dist = distance(lonlat(*lonlat1), lonlat(*lonlat2)).km 
     return dist
 
+def calc_distance(df,col_name='CO_distance',pref_EC='EC_',pref_RC='RC_'):
+    '''
+    Adds a column of distance between Emetteur and Recepteur for each CommandeProduits.
+    It requires Emetteur and Recepteur Comptes merged data.
+    Args:
+        df (DataFrame): Merged DataFrame of CommandeProduits, Emetteur and Recepteur Comptes
+        col_name (str): Name of the distance column
+        pref_EC and pref_RC (str): Prefix used in the Emetteur and Recepteur Comptes
+    Returns:
+        df (DataFrame): Resulting DataFrame with the added distance column
+    '''
+    from math import sin, cos, sqrt, atan2, radians
+    df_calc = pd.DataFrame()
+    
+    # approximate radius of earth in km
+    R = 6373.0
+    
+    df_calc['lat1'] = df[pref_EC+'Latitude' ].apply(lambda x: radians(x))
+    df_calc['lon1'] = df[pref_EC+'Longitude'].apply(lambda x: radians(x))
+    df_calc['lat2'] = df[pref_RC+'Latitude' ].apply(lambda x: radians(x))
+    df_calc['lon2'] = df[pref_RC+'Longitude'].apply(lambda x: radians(x))
+    
+    df_calc['dlat'] = df_calc['lat2']-df_calc['lat1']
+    df_calc['dlon'] = df_calc['lon2']-df_calc['lon1']
+    
+    df_calc['a'] = df_calc.apply(
+        lambda row: sin(row['dlat'] / 2)**2 + cos(row['lat1']) * cos(row['lat2']) * sin(row['dlon'] / 2)**2, 
+        axis=1)
+    df_calc['c'] = df_calc.apply(lambda row: 2 * atan2(sqrt(row['a']), sqrt(1 - row['a'])),axis=1)
+    df_calc[col_name] = df_calc['c'] * R
+    
+    df[col_name] = df_calc[col_name]
+    
+    return df
+
 def add_ER_distance(df,col_name='CO_distance',pref_EC='EC_',pref_RC='RC_'): 
     '''
     Adds a column of distance between Emetteur and Recepteur for each CommandeProduits.
@@ -392,7 +435,7 @@ def add_ER_distance(df,col_name='CO_distance',pref_EC='EC_',pref_RC='RC_'):
             d = None
         i.append(index)
         v.append(d)
-        print(index)
+        print(index) if (index % 10000.0 == 0.0) else True
     df[col_name] = pd.DataFrame(v,index=i,columns=[col_name])
     return df
 
@@ -420,7 +463,12 @@ def manual_geotag(df_matrix):
                    dict(Id=2553,new_lon=2.35781,new_lat=48.87406), # CHU Altho
                    dict(Id=2583,new_lon=2.37312,new_lat=48.84913), # RdC 37 Joué-les-Tours
                    dict(Id=2113,new_lon=-3.02101,new_lat=47.8741), # Banque Alimentaire Baud
-                   
+                   dict(Id=1552,new_lon=1.2749,new_lat=45.80956), # La Graine de l'Arbre du Voyageur
+                   dict(Id=1985,new_lon=2.96303,new_lat=48.41848), # Le Campus de la transition
+                   dict(Id=1525,new_lon=1.756843,new_lat=45.260449),  # Association Tulle Solidarité
+                   dict(Id=2161,new_lon=-1.166043,new_lat=47.745453), # CCAS Ombrée d'Anjou (5 rue de l'hotel de ville)
+                   dict(Id=1033,new_lon=2.9999,new_lat=43.18333), # Secours Populaire Français 11 - Antenne de Narbonne
+                    # 1464- PARTAGE
                    ]
     for c in dict_manual:
         # Apply manual correction to df_matrix

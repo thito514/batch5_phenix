@@ -362,6 +362,40 @@ def calc_geodistance(lonlat1=(), lonlat2=()):
     dist = distance(lonlat(*lonlat1), lonlat(*lonlat2)).km 
     return dist
 
+def add_ER_distance(df,col_name='CO_distance',pref_EC='EC_',pref_RC='RC_'): 
+    '''
+    Adds a column of distance between Emetteur and Recepteur for each CommandeProduits.
+    It requires Emetteur and Recepteur Comptes merged data.
+    Args:
+        df (DataFrame): Merged DataFrame of CommandeProduits, Emetteur and Recepteur Comptes
+        col_name (str): Name of the distance column
+        pref_EC and pref_RC (str): Prefix used in the Emetteur and Recepteur Comptes
+    Returns:
+        df (DataFrame): Resulting DataFrame with the added distance column
+    '''
+    lon_FR_bound = range(-6,9)
+    lat_FR_bound = range(42,52)
+    df[col_name]=None
+    i = []
+    v = []
+    
+    for index, cmd in df.iterrows():
+        start_lonlat = (cmd[pref_EC+'Longitude'],cmd[pref_EC+'Latitude'])
+        end_lonlat = (cmd[pref_RC+'Longitude'],cmd[pref_RC+'Latitude'])
+        d = None
+        
+        # filter if value are out of France boundary lon[-6,9] and lat[42,52]
+        if ((int(start_lonlat[0]) in lon_FR_bound) & (int(end_lonlat[0]) in lon_FR_bound) & 
+            (int(start_lonlat[1]) in lat_FR_bound) & (int(end_lonlat[1]) in lat_FR_bound)):
+            d = calc_geodistance(start_lonlat, end_lonlat)
+        else:
+            d = None
+        i.append(index)
+        v.append(d)
+        print(index)
+    df[col_name] = pd.DataFrame(v,index=i,columns=[col_name])
+    return df
+
 def manual_geotag(df_matrix):
     '''
     This function manually corrects geotags of Phenix accounts
@@ -371,6 +405,8 @@ def manual_geotag(df_matrix):
         df_matrix (DataFrame): Corrected geotags
     '''
     dict_manual = [
+                   dict(Id=296,new_lon=-1.17891,new_lat=47.3720818), # E.Leclerc Ancenis
+                   dict(Id=1301,new_lon=2.00594,new_lat=43.46403), # CASINO REVEL 31597
                    dict(Id=1880,new_lon=0.09723,new_lat=48.43538), # Carrefour Market - Alençon
                    dict(Id=2418,new_lon=2.35436,new_lat=48.84016), # Franprix SEBASTOPOL 5651
                    dict(Id=2438,new_lon=2.35781,new_lat=48.87406), # Franprix MAGENTA DISTR 5200
@@ -383,6 +419,8 @@ def manual_geotag(df_matrix):
                    dict(Id=2533,new_lon=2.35436,new_lat=48.84016), # RDC 25 Valdahon
                    dict(Id=2553,new_lon=2.35781,new_lat=48.87406), # CHU Altho
                    dict(Id=2583,new_lon=2.37312,new_lat=48.84913), # RdC 37 Joué-les-Tours
+                   dict(Id=2113,new_lon=-3.02101,new_lat=47.8741), # Banque Alimentaire Baud
+                   
                    ]
     for c in dict_manual:
         # Apply manual correction to df_matrix

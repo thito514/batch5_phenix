@@ -306,6 +306,9 @@ def geotag_Compte(df, prefix='', IGN_API=''):
     matrix = []
     
     for index, value in df.iterrows():
+        i = value[prefix+'Id']
+        adresse1 = '' if str(value[prefix+'Adresse_AdresseLigne1'])=='nan' else str(value[prefix+'Adresse_AdresseLigne1'])
+        adresse2 = '' if str(value[prefix+'Adresse_AdresseLigne2'])=='nan' else str(value[prefix+'Adresse_AdresseLigne2'])
         adresse3 = '' if str(value[prefix+'Adresse_AdresseLigne3'])=='nan' else str(value[prefix+'Adresse_AdresseLigne3'])
         ville = '' if str(value[prefix+'Adresse_Ville'])=='nan' else str(value[prefix+'Adresse_Ville'])
         CP = '' if str(value[prefix+'Adresse_CodePostal'])=='nan' else str(value[prefix+'Adresse_CodePostal'])
@@ -315,10 +318,12 @@ def geotag_Compte(df, prefix='', IGN_API=''):
         try:
             location = geolocator.geocode(query,maximum_responses=1,exactly_one=True)
         except:
-            print('(%s) %s --> location not found' % (index, value[prefix+'Nom']))
-            element= dict(index = index,
+            print('(%s) %s --> location not found' % (i, query))
+            element= dict(Id = value[prefix+'Id'],
                       delta=None,
                       Nom=value[prefix+'Nom'],
+                      adresse1=value[prefix+'Adresse_AdresseLigne1'],
+                      adresse2=value[prefix+'Adresse_AdresseLigne2'],
                       adresse3=value[prefix+'Adresse_AdresseLigne3'],
                       ville=value[prefix+'Adresse_Ville'],
                       CP=value[prefix+'Adresse_CodePostal'],
@@ -332,11 +337,14 @@ def geotag_Compte(df, prefix='', IGN_API=''):
         # calculate distance old vs new geolocation
         old_lonlat = (value[prefix+'Longitude'], value[prefix+'Latitude'])
         new_lonlat = (location.longitude, location.latitude)
-        delta = distance(lonlat(*old_lonlat), lonlat(*new_lonlat)).km 
+        delta = calc_geodistance(lonlat1=old_lonlat, lonlat2=new_lonlat)
+        #### delta = distance(lonlat(*old_lonlat), lonlat(*new_lonlat)).km 
                                    
-        element = dict(index = index,
+        element = dict(Id = value[prefix+'Id'],
                       delta=delta,
                       Nom=value[prefix+'Nom'],
+                      adresse1=value[prefix+'Adresse_AdresseLigne1'],
+                      adresse2=value[prefix+'Adresse_AdresseLigne2'],
                       adresse3=value[prefix+'Adresse_AdresseLigne3'],
                       ville=value[prefix+'Adresse_Ville'],
                       CP=value[prefix+'Adresse_CodePostal'],
@@ -346,6 +354,47 @@ def geotag_Compte(df, prefix='', IGN_API=''):
                       new_lat=location.latitude)
         matrix.append(element)
     df_matrix = pd.DataFrame.from_dict(matrix)
+    return df_matrix
+
+def calc_geodistance(lonlat1=(), lonlat2=()):
+    from geopy.distance import lonlat, distance
+    
+    dist = distance(lonlat(*lonlat1), lonlat(*lonlat2)).km 
+    return dist
+
+def manual_geotag(df_matrix):
+    '''
+    This function manually corrects geotags of Phenix accounts
+    Args:
+        df_matrix (DataFrame): DataFrame resulting of geotag_Comptes()
+    Returns:
+        df_matrix (DataFrame): Corrected geotags
+    '''
+    dict_manual = [
+                   dict(Id=1880,new_lon=0.09723,new_lat=48.43538), # Carrefour Market - Alençon
+                   dict(Id=2418,new_lon=2.35436,new_lat=48.84016), # Franprix SEBASTOPOL 5651
+                   dict(Id=2438,new_lon=2.35781,new_lat=48.87406), # Franprix MAGENTA DISTR 5200
+                   dict(Id=2440,new_lon=2.4097477,new_lat=48.8554594), # Franprix SOGI VINGT 5209
+                   dict(Id=2468,new_lon=2.37312,new_lat=48.84913), # Franprix SUPERANT 6241
+                   dict(Id=1970,new_lon=2.0014673,new_lat=43.45391), # Restos du coeur 31 - Centre de Revel
+                   dict(Id=2555,new_lon=2.409748,new_lat=48.855459), # Intermarché Baratier
+                   dict(Id=1983,new_lon=0.09723,new_lat=48.43538), # Banque Alimentaire 87o
+                   dict(Id=2074,new_lon=2.001467,new_lat=43.45391), # SCF 78 Maisons Lafitte
+                   dict(Id=2533,new_lon=2.35436,new_lat=48.84016), # RDC 25 Valdahon
+                   dict(Id=2553,new_lon=2.35781,new_lat=48.87406), # CHU Altho
+                   dict(Id=2583,new_lon=2.37312,new_lat=48.84913), # RdC 37 Joué-les-Tours
+                   ]
+    for c in dict_manual:
+        # Apply manual correction to df_matrix
+        index = df_matrix[df_matrix.Id == c['Id']].index[0]
+        df_matrix.loc[(index),['new_lat']] = c['new_lat']
+        df_matrix.loc[(index),['new_lon']] = c['new_lon']
+
+        # Calculate distance
+        old_lat = df_matrix.loc[(index)].get_value('old_lat')
+        old_lon = df_matrix.loc[(index)].get_value('old_lon')
+        delta = calc_geodistance(lonlat1=(old_lon, old_lat), lonlat2=(c['new_lon'], c['new_lat']))
+        df_matrix.loc[(index),['delta']] = delta
     return df_matrix
 
 def replace_geotag(df, df_matrix, prefix='', threshold=1):
@@ -360,16 +409,73 @@ def replace_geotag(df, df_matrix, prefix='', threshold=1):
     Returns:
         df (DataFrame): Simplified Comptes DataFrame with the following columns
     """
+    # loop on geocoded elements that are further than the threshold
     for index, value in df_matrix[df_matrix.delta > threshold].iterrows():
-        df_sel = df[(df[prefix+'Nom']==value.nom)&
-                    (df[prefix+'Adresse_AdresseLigne3']==value.adresse3)&
-                    (df[prefix+'Adresse_Ville']==value.ville)&
-                    (df[prefix+'Adresse_CodePostal']==value.CP)]
-        df_sel_count = len(df_sel)
-
-        df_index = df_sel.index
+        df_index = df[(df[prefix+'Id']==value.Id)].index
 
         df.loc[list(df_index),[prefix+'Longitude']] = value.new_lon
         df.loc[list(df_index),[prefix+'Latitude']] = value.new_lat
     
+    # loop on elements that couldn't be geocoded
+    for index, value in df_matrix[df_matrix.delta.isnull()].iterrows():
+        df_index = df[(df[prefix+'Id']==value.Id)].index
+
+        df.loc[list(df_index),[prefix+'Longitude']] = value.old_lon
+        df.loc[list(df_index),[prefix+'Latitude']] = value.old_lat
+    print('%d coordinates has been updated of %d' % (len(df_matrix[df_matrix.delta > threshold]), len(df_matrix)))
+    
     return df
+
+def plot_df_matrix(df_matrix):
+    """
+    Plot a map of all Phenix accounts before and after geocoding.
+    This function requires plotly.
+    Args:
+        df_matrix (DataFrame): DataFrame resulting of geotag_Comptes()
+    Returns:
+        Map plot from Plotly
+    """
+    import plotly
+    from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
+    init_notebook_mode()
+    
+    trace_new = {
+        'type':'scattergeo',
+        'lat':df_matrix.new_lat.values.tolist(),
+        'lon':df_matrix.new_lon.values.tolist(),
+        'text':df_matrix.Nom.values.tolist(),
+        'name':'NEW',
+        'marker':{
+            'color': 'blue',
+        },
+        'mode':'markers'
+    }
+    trace_old = {
+        'type':'scattergeo',
+        'lat':df_matrix.old_lat.values.tolist(),
+        'lon':df_matrix.old_lon.values.tolist(),
+        'text':df_matrix.Nom.values.tolist(),
+        'name': 'OLD',
+        'marker':{
+            'color': 'red',
+            'symbol':'x'
+        },
+        'mode':'markers'
+    }
+    layout = dict(
+            title = 'Comparaison des positions des comptes (avant/après correction par geocoding)',
+            width = 800,
+            geo = dict(
+                scope='europe',
+                resolution=50,
+                center= {'lon':2,'lat':46.5},
+                framewidth=700,
+                showland = True,
+                landcolor = 'rgb(243, 243, 243)',
+                countrycolor = 'rgb(204, 204, 204)'
+                ),
+        )
+
+    fig = dict( data=[trace_old, trace_new], layout=layout)
+    plotly.offline.iplot(fig) 
+    return fig

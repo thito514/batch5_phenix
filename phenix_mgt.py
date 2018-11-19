@@ -405,40 +405,6 @@ def calc_distance(df,col_name='CO_distance',pref_EC='EC_',pref_RC='RC_'):
     
     return df
 
-def add_ER_distance(df,col_name='CO_distance',pref_EC='EC_',pref_RC='RC_'): 
-    '''
-    Adds a column of distance between Emetteur and Recepteur for each CommandeProduits.
-    It requires Emetteur and Recepteur Comptes merged data.
-    Args:
-        df (DataFrame): Merged DataFrame of CommandeProduits, Emetteur and Recepteur Comptes
-        col_name (str): Name of the distance column
-        pref_EC and pref_RC (str): Prefix used in the Emetteur and Recepteur Comptes
-    Returns:
-        df (DataFrame): Resulting DataFrame with the added distance column
-    '''
-    lon_FR_bound = range(-6,9)
-    lat_FR_bound = range(42,52)
-    df[col_name]=None
-    i = []
-    v = []
-    
-    for index, cmd in df.iterrows():
-        start_lonlat = (cmd[pref_EC+'Longitude'],cmd[pref_EC+'Latitude'])
-        end_lonlat = (cmd[pref_RC+'Longitude'],cmd[pref_RC+'Latitude'])
-        d = None
-        
-        # filter if value are out of France boundary lon[-6,9] and lat[42,52]
-        if ((int(start_lonlat[0]) in lon_FR_bound) & (int(end_lonlat[0]) in lon_FR_bound) & 
-            (int(start_lonlat[1]) in lat_FR_bound) & (int(end_lonlat[1]) in lat_FR_bound)):
-            d = calc_geodistance(start_lonlat, end_lonlat)
-        else:
-            d = None
-        i.append(index)
-        v.append(d)
-        print(index) if (index % 10000.0 == 0.0) else True
-    df[col_name] = pd.DataFrame(v,index=i,columns=[col_name])
-    return df
-
 def manual_geotag(df_matrix):
     '''
     This function manually corrects geotags of Phenix accounts

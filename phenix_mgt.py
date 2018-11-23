@@ -422,7 +422,7 @@ def manual_geotag(df_matrix):
                    dict(Id=2440,new_lon=2.4097477,new_lat=48.8554594), # Franprix SOGI VINGT 5209
                    dict(Id=2468,new_lon=2.37312,new_lat=48.84913), # Franprix SUPERANT 6241
                    dict(Id=1970,new_lon=2.0014673,new_lat=43.45391), # Restos du coeur 31 - Centre de Revel
-                   dict(Id=2555,new_lon=2.409748,new_lat=48.855459), # Intermarché Baratier
+                   dict(Id=2555,new_lon=6.491198,new_lat=44.545372), # Intermarché Baratier
                    dict(Id=1983,new_lon=0.09723,new_lat=48.43538), # Banque Alimentaire 87o
                    dict(Id=2074,new_lon=2.001467,new_lat=43.45391), # SCF 78 Maisons Lafitte
                    dict(Id=2533,new_lon=2.35436,new_lat=48.84016), # RDC 25 Valdahon
@@ -531,3 +531,66 @@ def plot_df_matrix(df_matrix):
     fig = dict( data=[trace_old, trace_new], layout=layout)
     plotly.offline.iplot(fig) 
     return fig
+
+##############################################################
+### List of functions used for extracting quantity from Product name 
+### and value (3€/kg average)
+##############################################################
+def add_product_qty(df_P):
+    import off_mgt as off
+    
+    # First try to extract quantity from product name
+    df_P['Qty'] = df_P.P_Nom.apply(lambda name: off.convert_quantity(name))
+    df_P['Qty_val']    = [q.get('val') for q in df_P.Qty]
+    df_P['Qty_unit']   = [q.get('unit') for q in df_P.Qty]
+    df_P['Qty_std']    = [q.get('std') for q in df_P.Qty]
+    df_P['Qty_approx'] = [q.get('approx') for q in df_P.Qty]
+    df_P['Qty_method'] = 1
+    print('STEP 1 - %d (not std) %d (std)' % (len(df_P[df_P.Qty_std==False]),len(df_P[df_P.Qty_std==True])))
+    
+    # Second - Try to extract from Phénix quantity column
+    filter_ = (df_P.Qty_std==False) & (df_P.P_PoidsUnitaire.notnull())
+    df_P.loc[filter_,'Qty_val']    = df_P[filter_].P_PoidsUnitaire * 1000
+    df_P.loc[filter_,'Qty_unit']   = df_P[filter_].Qty_unit.apply(lambda x: 'g')
+    df_P.loc[filter_,'Qty_approx'] = df_P[filter_].Qty_approx.apply(lambda x: bool(False))
+    df_P.loc[filter_,'Qty_method'] = df_P[filter_].Qty_method.apply(lambda x: int(2))
+    df_P.loc[filter_,'Qty_std'] = df_P[filter_].Qty_std.apply(lambda x: bool(True))
+    print('STEP 2 - %d (not std) %d (std)' % (len(df_P[df_P.Qty_std==False]),len(df_P[df_P.Qty_std==True])))
+    
+    # Third - Try to extract from OFF database (csv)
+    filter_ = (df_P.Qty_std==False)
+    df_P.loc[filter_,'Qty_method'] = df_P[filter_].Qty_method.apply(lambda x: int(3))
+    print('STEP 3 - %d (not std) %d (std)' % (len(df_P[df_P.Qty_std==False]),len(df_P[df_P.Qty_std==True])))
+    
+    # Last - Extrapolate from product value €
+    filter_ = (df_P.Qty_std==False) 
+    df_P.loc[filter_,'Qty_val']    = df_P[filter_].P_PoidsUnitaire * 1000
+    df_P.loc[filter_,'Qty_unit']   = df_P[filter_].Qty_unit.apply(lambda x: 'g')
+    df_P.loc[filter_,'Qty_approx'] = df_P[filter_].Qty_approx.apply(lambda x: bool(False))
+    df_P.loc[filter_,'Qty_method'] = df_P[filter_].Qty_method.apply(lambda x: int(4))
+    df_P.loc[filter_,'Qty_std'] = df_P[filter_].Qty_std.apply(lambda x: bool(True))
+    print('STEP last - %d (not std) %d (std)' % (len(df_P[df_P.Qty_std==False]),len(df_P[df_P.Qty_std==True])))
+    
+    return df_P
+
+##############################################################
+### List of functions used for adding Food Groups to Products
+### Uses Mehdi ML algo results (csv)
+##############################################################
+def add_foodgroup (df_P, csv_path=''):
+    """
+    Adds Food Group column in the Product table using Mehdi ML Algo results
+    Args:
+        df_P (DataFrame): Product DataFrame
+        csv_path (str): CSV path to mehdi ML algo results
+    Returns:
+        df_P (DataFrame): Product DataFrame including the Food Group column
+    """
+    df_mehdi = pd.read_csv(csv_path, sep=';',encoding='utf-8')
+    df_mehdi = df_mehdi.rename(columns={'EAN':'P_EAN','foodgroup':'P_food_group'})
+    df_mehdi.drop('Produit_Nom',axis=1,inplace=True)
+    df_mehdi.drop_duplicates('P_EAN',inplace=True)
+    
+    df_P = merge_tables(df_P,df_mehdi,on_col=['P_EAN','P_EAN'],col_name='P_EAN',how='left',del_col=False)
+    
+    return df_P

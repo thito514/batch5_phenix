@@ -95,12 +95,12 @@ def convert_quantity(str_qty):
         # Regex matches integer followed by x or *, followed by integer
         # or decimal (value), and the following letters (unit)
         # up until whitespace or non-word character
-        pattern = '(\d+)\s*[\*xX]\s*(\d+[,.]?\d*)\s*([a-zA-Z]+)(?:\s|]|\W)*'
+        pattern = '(\d+)\s*[\*xX]\s*(\d?[,.]?\d*)\s*([a-zA-Z]+)(?:\s|]|\W)*'
         m = re.search(pattern, string, re.UNICODE)
         if m is not None:
             multiplier = int(m.group(1))
-            value = float(m.group(2).replace(',','.')) * multiplier
-            unit = rename_qty2stdunit(m.group(3))
+            value = float(m.group(2).replace(',','.')) * multiplier if m.group(2) not in ['',',','.'] else None
+            unit = rename_qty2stdunit(m.group(3)) if m.group(2) not in ['',',','.'] else None
             dict_qty = convert_qty2gram({'val': value, 'unit': unit})
             lst_dict.append(dict_qty)
             continue
@@ -146,25 +146,25 @@ def rename_qty2stdunit(unit):
         std_unit (str): standard unit name
     """
     clean_matrix = {None:[None,''],
-                    'g':['g','gr','grammes','G','grams','gramme','grs','Grammes',
+                    'g':['g','gr','grammes','G','GX','grams','gramme','grs','Grammes',
                          'gram','gramm','grames','GR','gms','gm','grammi',
-                         'grm','gramos','gammes','Grs','gramas','Gramos',
+                         'grm','gramos','gammes','Grs','GRS','gramas','Gramos',
                          'grme','Gramm','gra','Gr','grms','ghr','gfd'],
                     'kg':['kg','Kg','KG','kgs','kilogrammae','klg','Kilogramm','kgi',
-                         'kgr','kilos','kilo'],
+                         'kgr','kilos','kilo','KGE'],
                     'mg':['mg','mcg','mG','Mg','MG'],
                     'gal':['gal','gallon','GAL','Gal','GALLON','Gallon'],
-                    'egg':['egg','eggs','Eggs','huevos','oeufs','Oeufs','ufs'],
+                    'egg':['egg','eggs','Eggs','huevos','oeufs','Oeufs','OEUFS','OEUF','ufs'],
                     'portion':['portion','PART','PARTS','servings','Servings','Serving',
                          'Unidad', 'triangles','beignets','galettes','baguettines',
                          'oranges','magret','baguette','Galettes','courge',
                          'galetttes','meringues','galetted','baguettes',
                          'Burger','gaufrettes','mangue','yogourts','gaufres',
-                         'Gaufres','burgers','galletas','hamburguesas','vegano',
+                         'Gaufres','GAUFRES','burgers','galletas','hamburguesas','vegano',
                          'fromage','mignonnettes','Portionsfilets','avocats',
-                         'Fruit','fruits','fruit','portions','filets'],
+                         'Fruit','fruits','fruit','portions','filets','PIECES'],
                     'l':['l','L','litre','litres','Litre','Litres','Liters','liter',
-                         'litro','Liter'],
+                         'litro','Liter','LITRE'],
                     'ml':['ml','mL','ML','Ml'],
                     'cl':['cl','cL','CL','Cl'],
                     'dl':['dl','dL','DL','Dl'],

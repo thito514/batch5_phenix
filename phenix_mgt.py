@@ -40,7 +40,7 @@ def extract_Phenix_SQLtable2CSV(path='./Phenix_DB/'):
         
     return True
 
-def get_CategorieProduits(path, prefix='CatP_'):
+def get_CategorieProduits(path, prefix='CatP_', cleaned=False):
     """
     Read CSV (CategorieProduits) into Dataframe. All relevant columns are kept and renamed with prefix.
     Args:
@@ -67,11 +67,14 @@ def get_CategorieProduits(path, prefix='CatP_'):
           'IsPerishable': 'bool',
           'Nom': 'object',
           'Descriptif': 'object'}
-    df = pd.read_csv(path, sep='\t', encoding='utf-8', usecols=list(col.keys()), dtype=dt)
-    df = df.rename(index=str, columns=col)
+    if not cleaned:
+        df = pd.read_csv(path, sep='\t', encoding='utf-8', usecols=list(col.keys()), dtype=dt)
+        df = df.rename(index=str, columns=col)
+    else:
+        df = pd.read_csv(path, sep='\t', encoding='utf-8',index_col=0)
     return df
 
-def get_CommandeProduits(path, prefix='CP_'):
+def get_CommandeProduits(path, prefix='CP_',cleaned=False):
     """
     Read CSV (CommandeProduits) into Dataframe. All relevant columns are kept and renamed with prefix.
     Args:
@@ -96,11 +99,14 @@ def get_CommandeProduits(path, prefix='CP_'):
           'QuantiteValeur':'float64',
           'MontantTotal':'float64',
           'Weight':'float64'}
-    df = pd.read_csv(path, sep='\t', encoding='utf-8', usecols=list(col.keys()), dtype=dt)
-    df = df.rename(index=str, columns=col)
+    if not cleaned:
+        df = pd.read_csv(path, sep='\t', encoding='utf-8', usecols=list(col.keys()), dtype=dt)
+        df = df.rename(index=str, columns=col)
+    else:
+        df = pd.read_csv(path, sep='\t', encoding='utf-8',index_col=0)
     return df
 
-def get_Commandes(path, prefix = 'CO_'):
+def get_Commandes(path, prefix = 'CO_', cleaned=False):
     """
     Read CSV (Commandes) into Dataframe. All relevant columns are kept and renamed with prefix.
     Args:
@@ -121,12 +127,16 @@ def get_Commandes(path, prefix = 'CO_'):
            'Statut':'int64',
            'Offre_Id':'int64',
            'Recepteur_Id':'int64'}
-    date = ['DateCommande']
-    df = pd.read_csv(path, sep='\t', encoding='utf-8', usecols=list(col.keys()), dtype=dt, parse_dates=date)
-    df = df.rename(index=str, columns=col)
+    if not cleaned:
+        date = ['DateCommande']
+        df = pd.read_csv(path, sep='\t', encoding='utf-8', usecols=list(col.keys()), dtype=dt, parse_dates=date)
+        df = df.rename(index=str, columns=col)
+    else:
+        date = [prefix+'DateCommande']
+        df = pd.read_csv(path, sep='\t', encoding='utf-8', parse_dates=date,index_col=0)
     return df
 
-def get_Comptes(path, prefix = 'C_'):
+def get_Comptes(path, prefix = 'C_', cleaned=False):
     """
     Read CSV (Comptes) into Dataframe. All relevant columns are kept and renamed with prefix.
     Args:
@@ -152,11 +162,14 @@ def get_Comptes(path, prefix = 'C_'):
            'Longitude':'float64',
            'Nom':'object',
            'TypeCompte':'int64'}
-    df = pd.read_csv(path, sep='\t', encoding='utf-8', usecols=list(col.keys()), dtype=dt)
-    df = df.rename(index=str, columns=col)
+    if not cleaned:
+        df = pd.read_csv(path, sep='\t', encoding='utf-8', usecols=list(col.keys()), dtype=dt)
+        df = df.rename(index=str, columns=col)
+    else:
+        df = pd.read_csv(path, sep='\t', encoding='utf-8',index_col=0)
     return df
 
-def get_OffreProduits(path, prefix = 'OP_'):
+def get_OffreProduits(path, prefix = 'OP_', cleaned=False):
     """
     Read CSV (OffreProduits) into Dataframe. All relevant columns are kept and renamed with prefix.
     Args:
@@ -181,11 +194,14 @@ def get_OffreProduits(path, prefix = 'OP_'):
            'QuantiteUnite':'object',
            'QuantiteValeur':'float64',
            'QuantiteValeurParLot':'float64'}
-    df = pd.read_csv(path, sep='\t', encoding='utf-8', usecols=list(col.keys()), dtype=dt)
-    df = df.rename(index=str, columns=col)
+    if not cleaned:
+        df = pd.read_csv(path, sep='\t', encoding='utf-8', usecols=list(col.keys()), dtype=dt)
+        df = df.rename(index=str, columns=col)
+    else:
+        df = pd.read_csv(path, sep='\t', encoding='utf-8',index_col=0)
     return df
 
-def get_Offres(path, prefix = 'O_'):
+def get_Offres(path, prefix = 'O_', cleaned=False):
     """
     Read CSV (Offres) into Dataframe. All relevant columns are kept and renamed with prefix.
     Args:
@@ -198,11 +214,14 @@ def get_Offres(path, prefix = 'O_'):
            'Compte_Id':'Compte_Id'}
     dt = {'Id':'int64',
           'Compte_Id':'int64'}
-    df = pd.read_csv(path, sep='\t', encoding='utf-8', usecols=list(col.keys()), dtype=dt)
-    df = df.rename(index=str, columns=col)
+    if not cleaned:
+        df = pd.read_csv(path, sep='\t', encoding='utf-8', usecols=list(col.keys()), dtype=dt)
+        df = df.rename(index=str, columns=col)
+    else:
+        df = pd.read_csv(path, sep='\t', encoding='utf-8',index_col=0)
     return df
 
-def get_Produits(path, prefix = 'P_'):
+def get_Produits(path, prefix = 'P_', cleaned=False):
     """
     Read CSV (Produits) into Dataframe. All relevant columns are kept and renamed with prefix.
     Args:
@@ -223,8 +242,11 @@ def get_Produits(path, prefix = 'P_'):
           'Ean':'object',
           'Nom':'object',
           'PoidsUnitaire':'float64'}
-    df = pd.read_csv(path, sep='\t', encoding='utf-8', usecols=list(col.keys()), dtype=dt)
-    df = df.rename(index=str, columns=col)
+    if not cleaned:
+        df = pd.read_csv(path, sep='\t', encoding='utf-8', usecols=list(col.keys()), dtype=dt)
+        df = df.rename(index=str, columns=col)
+    else:
+        df = pd.read_csv(path, sep='\t', encoding='utf-8',index_col=0)
     return df
 
 
@@ -537,7 +559,17 @@ def plot_df_matrix(df_matrix):
 ### and value (3€/kg average)
 ##############################################################
 def add_product_qty(df_P):
+    """
+    STEP 1
+    Get product quantity from Phenix product name
+    Args:
+        df_P (DataFrame): Product DataFrame
+    Returns:
+        df_P (DataFrame): Product DataFrame with updated quantity
+    """
     import off_mgt as off
+    print('-- Adding Product quantity column --')
+    print('WARNING - This function is time consuming.')
     
     # First try to extract quantity from product name
     df_P['Qty'] = df_P.P_Nom.apply(lambda name: off.convert_quantity(name))
@@ -547,8 +579,18 @@ def add_product_qty(df_P):
     df_P['Qty_approx'] = [q.get('approx') for q in df_P.Qty]
     df_P['Qty_method'] = 1
     print('STEP 1 - %d (not std) %d (std)' % (len(df_P[df_P.Qty_std==False]),len(df_P[df_P.Qty_std==True])))
-    
-    # Second - Try to extract from Phénix quantity column
+
+    return df_P
+
+def get_qty_from_PhenixCol(df_P):
+    """
+    STEP 2
+    Get product quantity from Phenix product quantity column (kg)
+    Args:
+        df_P (DataFrame): Product DataFrame
+    Returns:
+        df_P (DataFrame): Product DataFrame with updated quantity
+    """
     filter_ = (df_P.Qty_std==False) & (df_P.P_PoidsUnitaire.notnull())
     df_P.loc[filter_,'Qty_val']    = df_P[filter_].P_PoidsUnitaire * 1000
     df_P.loc[filter_,'Qty_unit']   = df_P[filter_].Qty_unit.apply(lambda x: 'g')
@@ -556,28 +598,138 @@ def add_product_qty(df_P):
     df_P.loc[filter_,'Qty_method'] = df_P[filter_].Qty_method.apply(lambda x: int(2))
     df_P.loc[filter_,'Qty_std'] = df_P[filter_].Qty_std.apply(lambda x: bool(True))
     print('STEP 2 - %d (not std) %d (std)' % (len(df_P[df_P.Qty_std==False]),len(df_P[df_P.Qty_std==True])))
-    
-    # Third - Try to extract from OFF database (csv)
-    filter_ = (df_P.Qty_std==False)
-    df_P.loc[filter_,'Qty_method'] = df_P[filter_].Qty_method.apply(lambda x: int(3))
-    print('STEP 3 - %d (not std) %d (std)' % (len(df_P[df_P.Qty_std==False]),len(df_P[df_P.Qty_std==True])))
-    
-    # Last - Extrapolate from product value €
-    filter_ = (df_P.Qty_std==False) 
-    df_P.loc[filter_,'Qty_val']    = df_P[filter_].P_PoidsUnitaire * 1000
-    df_P.loc[filter_,'Qty_unit']   = df_P[filter_].Qty_unit.apply(lambda x: 'g')
-    df_P.loc[filter_,'Qty_approx'] = df_P[filter_].Qty_approx.apply(lambda x: bool(False))
-    df_P.loc[filter_,'Qty_method'] = df_P[filter_].Qty_method.apply(lambda x: int(4))
-    df_P.loc[filter_,'Qty_std'] = df_P[filter_].Qty_std.apply(lambda x: bool(True))
-    print('STEP last - %d (not std) %d (std)' % (len(df_P[df_P.Qty_std==False]),len(df_P[df_P.Qty_std==True])))
-    
     return df_P
+
+def extrapolate_qty_from_productvalue(df_P, df_OP, df_CP):
+    """
+    STEP 3
+    Extrapolate product quantity from the product value (€)
+    Args:
+        df_P (DataFrame): Product DataFrame
+        df_OP (DataFrame): OffreProduit DataFrame
+        df_CP (DataFrame): CommandeProduit DataFrame
+    Returns:
+        df_P (DataFrame): Product DataFrame with updated quantity
+    """
+    filter_ = (df_P.Qty_std==False) 
+    df_OPF = df_OP[['OP_Id','OP_QuantiteValeur','OP_QuantiteUnite','Produit_Id']]
+    df_CPF = df_CP[['CP_Id','OffreProduit_Id','CP_QuantiteValeur','CP_QuantiteTotale','CP_QuantiteUnite','CP_MontantTotal']]
+    df_PF  = df_P[filter_][['P_Id','P_food_group','Qty_val','Qty_unit','Qty_std','Qty_approx','Qty_method']]
+
+    dict_merge = [{'df2':df_PF,  'on_col': ['Id','P_Id'],                 'col_name':'P_Id'  , 'how':'right','del_col':False},
+                  {'df2':df_OPF, 'on_col': ['P_Id','Produit_Id'],         'col_name':'P_Id'  , 'how':'inner','del_col':False},
+                  {'df2':df_CPF, 'on_col': ['OP_Id','OffreProduit_Id'],   'col_name':'OP_Id' , 'how':'inner','del_col':True},]
+
+    df_F = merge_loop_tables(dict_merge)
+    df_F.drop_duplicates('P_Id',inplace=True)
+    df_F.set_index(['P_Id'],inplace=True,drop=False)
+    df_P.set_index(['P_Id'],inplace=True,drop=False)
+    
+    df_F1 = df_F.apply(lambda row: calc_qty_from_value(row),axis=1)
+    df_P.update(df_F1)
+    print('STEP 3 - %d (not std) %d (std)' % (len(df_P[df_P.Qty_std==False]),len(df_P[df_P.Qty_std==True])))
+    return df_P
+
+def get_qty_from_OFF(df_P, OFF_csv):
+    """
+    STEP 4
+    Get product quantity from OFF database
+    Args:
+        df_P (DataFrame): Product DataFrame
+        OFF_CSV (str): Path to OFF DB in csv
+    Returns:
+        df_P (DataFrame): Product DataFrame with updated quantity
+    """
+    import off_mgt as off
+    
+    ddf_OFF = load_OFF(OFF_csv,col=["code", "product_name","quantity"])
+    df_OFF = ddf_OFF.compute()
+    
+    filter_ = (df_P.Qty_std==False)
+    df_PF = df_P[filter_]
+    df_PF = merge_tables(df_PF,df_OFF,on_col=['P_EAN','code'],col_name='P_EAN',how='inner',del_col=False)
+    df_PF.drop_duplicates('P_Id',inplace=True)
+    
+    df_PF['Q_'] = df_PF.quantity.apply(lambda name: off.convert_quantity(name))
+
+    df_PF['Qty_val']    = [q.get('val')    for q in df_PF.Q_]
+    df_PF['Qty_unit']   = [q.get('unit')   for q in df_PF.Q_]
+    df_PF['Qty_std']    = [q.get('std')    for q in df_PF.Q_]
+    df_PF['Qty_approx'] = [q.get('approx') for q in df_PF.Q_]
+    df_PF['Qty_method'] = 4
+
+    df_PF.drop(['product_name','quantity','Q_'],axis=1,inplace=True)
+    df_PF.set_index(['P_Id'],inplace=True,drop=False)
+    
+    df_P.update(df_PF)
+    print('STEP 4 - %d (not std) %d (std)' % (len(df_P[df_P.Qty_std==False]),len(df_P[df_P.Qty_std==True])))
+    return df_P
+
+def calc_qty_from_value(row):
+    """
+    Estimates product quantity based on product value and food group
+    Args:
+        row (): see extrapolate_qty_from_productvalue() function
+    Returns:
+        qty (float): Product quantity estimation (g)
+    """
+    value = abs(row.CP_MontantTotal)
+    food_group = row.P_food_group
+    Q_unit = row.CP_QuantiteUnite
+    Q_val = abs(row.CP_QuantiteTotale)
+    #print(Q_unit)
+    
+    # Check if CP has already a weight. If so, use it.
+    if Q_unit in ['Kg','kg','Kilo','Litre','Litres']:
+        row.Qty_val = Q_val * 1000
+        row.Qty_unit = 'g'
+        row.Qty_approx = bool(False)
+        row.Qty_method = 3.0
+        row.Qty_std = bool(True)
+        #print(row[['P_Id','Qty_val','Qty_unit','Qty_std','Qty_approx','Qty_method']])
+        return row[['P_Id','Qty_val','Qty_unit','Qty_std','Qty_approx','Qty_method']]
+    
+    # Calculate weight from food group and product value
+    if float(value)==0:
+        #print(row[['P_Id','Qty_val','Qty_unit','Qty_std','Qty_approx','Qty_method']])
+        return row[['P_Id','Qty_val','Qty_unit','Qty_std','Qty_approx','Qty_method']]
+    
+    dict_euro_kilo = {
+                        None:3,
+                        'nan':3,
+                        'Produits gras sucrés salés':3,
+                        'Produits laitiers (hors fromage)':3,
+                        'Féculents raffinés':2,
+                        'Fruits':1.5,
+                        'Exclus':3, 
+                        'Plats préparés':3, 
+                        'Légumes':1.5, 
+                        'Viande, oeufs':3, 
+                        'Fromage':3,
+                        'Matières grasses ajoutées':3, 
+                        'Féculents non raffinés':1.5, 
+                        'Poisson':3}
+
+    if food_group in (dict_euro_kilo.keys()):
+        row.Qty_val = dict_euro_kilo[food_group] / float(value) * 1000
+        row.Qty_unit = 'g'
+        row.Qty_approx = bool(False)
+        row.Qty_method = 3.0
+        row.Qty_std = bool(True)
+    else:
+        row.Qty_val = 3 / float(value) * 1000
+        row.Qty_unit = 'g'
+        row.Qty_approx = bool(False)
+        row.Qty_method = 3.0
+        row.Qty_std = bool(True)
+    #print(row[['P_Id','Qty_val','Qty_unit','Qty_std','Qty_approx','Qty_method']])
+    return row[['P_Id','Qty_val','Qty_unit','Qty_std','Qty_approx','Qty_method']]
 
 ##############################################################
 ### List of functions used for adding Food Groups to Products
 ### Uses Mehdi ML algo results (csv)
 ##############################################################
-def add_foodgroup (df_P, csv_path=''):
+def add_foodgroup(df_P, csv_path=''):
     """
     Adds Food Group column in the Product table using Mehdi ML Algo results
     Args:
@@ -586,11 +738,48 @@ def add_foodgroup (df_P, csv_path=''):
     Returns:
         df_P (DataFrame): Product DataFrame including the Food Group column
     """
+    print('-- Adding Product food group column --')
     df_mehdi = pd.read_csv(csv_path, sep=';',encoding='utf-8')
     df_mehdi = df_mehdi.rename(columns={'EAN':'P_EAN','foodgroup':'P_food_group'})
     df_mehdi.drop('Produit_Nom',axis=1,inplace=True)
     df_mehdi.drop_duplicates('P_EAN',inplace=True)
     
     df_P = merge_tables(df_P,df_mehdi,on_col=['P_EAN','P_EAN'],col_name='P_EAN',how='left',del_col=False)
-    
+    print('--> COMPLETED ')
     return df_P
+
+
+def load_OFF(OFF_csv,col=[]):
+    # col = ["code", "product_name", "pnns_groups_1", "pnns_groups_2", "quantity","serving_quantity"]
+    import dask
+    import dask.dataframe as dd
+    
+    ddf_OFF = dd.read_csv("./OFF_DB/fr.openfoodfacts.org.products.csv", sep="\t", encoding="utf-8", low_memory=False,
+                      usecols=col,
+                      dtype={'allergens': 'object',
+           'cities_tags': 'object',
+           'emb_codes': 'object',
+           'emb_codes_tags': 'object',
+           'first_packaging_code_geo': 'object',
+           'generic_name': 'object',
+           'ingredients_from_palm_oil_tags': 'object',
+           'labels': 'object',
+           'labels_fr': 'object',
+           'labels_tags': 'object',
+           'manufacturing_places': 'object',
+           'manufacturing_places_tags': 'object',
+           'origins': 'object',
+           'origins_tags': 'object',
+           'stores': 'object',
+           'code': 'object','allergens_fr': 'object',
+           'cities': 'object',
+           'created_t': 'object',
+           'last_modified_t': 'object',
+           'image_url': 'object',
+           'image_small_url': 'object',
+           'image_ingredients_url': 'object',
+           'image_ingredients_small_url': 'object',
+           'image_nutrition_url': 'object',
+           'image_nutrition_small_url': 'object',
+           'serving_quantity':'object'})
+    return ddf_OFF
